@@ -1,22 +1,26 @@
 package auction.entities.RO;
 
-import auction.entities.enums.Role;
 import auction.entities.User;
-import lombok.Data;
+import auction.entities.enums.Role;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserRO {
-    private String name;
+    private String username;
     private String email;
     private String password;
     private Role role;
 
     public User toEntity() {
-        User user = new User();
-        user.setName(this.name);
-        user.setEmail(this.email);
-        user.setPassword(this.password);
-        user.setRole(this.role);
-        return user;
+        return User.builder()
+                .username(this.username)
+                .email(this.email)
+                .password(this.password)
+                .role(this.role)
+                .build();
     }
 }

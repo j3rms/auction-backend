@@ -1,18 +1,29 @@
 package auction.entities.RO;
 
 import auction.entities.enums.ItemStatus;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ItemRO {
     private String name;
     private String description;
     private BigDecimal startingPrice;
-    private BigDecimal currentBidPrice;
     private ItemStatus status;
-    private LocalDateTime auctionEndTime;
-    private Long ownerId;
+    private UserRO seller;
+
+    public auction.entities.Item toEntity() {
+        return auction.entities.Item.builder()
+                .name(this.name)
+                .description(this.description)
+                .startingPrice(this.startingPrice)
+                .status(this.status)
+                .seller(this.seller != null ? this.seller.toEntity() : null)
+                .build();
+    }
 }
