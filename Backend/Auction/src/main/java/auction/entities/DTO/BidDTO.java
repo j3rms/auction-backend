@@ -3,26 +3,22 @@ package auction.entities.DTO;
 import auction.entities.Bid;
 import lombok.*;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BidDTO implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class BidDTO {
+    private Long id;
     private BigDecimal bidAmount;
-    private ItemDTO item;
-    private UserDTO user;
+    private UserDTO customer;
+    private UserDTO seller;
 
     public BidDTO(Bid bid) {
+        this.id = bid.getId();
         this.bidAmount = bid.getBidAmount();
-        this.item = new ItemDTO(bid.getItem());
-        this.user = new UserDTO(bid.getUser());
+        this.customer = new UserDTO(bid.getCustomer()); // Minimal customer details
+        this.seller = new UserDTO(bid.getSeller());     // Minimal seller details
     }
 }

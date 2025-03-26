@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bids")
@@ -16,23 +17,44 @@ import java.math.BigDecimal;
 public class Bid {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "bid_id", columnDefinition = "BIGINT")
+    @Column(name = "bid_id")
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "item_id", nullable = false, columnDefinition = "BIGINT")
+    @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false, columnDefinition = "BIGINT")
+    @JoinColumn(name = "customer_id", nullable = false)
+    private User customer;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id", nullable = false)  // ✅ Force user_id to avoid NULL errors
     private User user;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "seller_id", nullable = false)  // ✅ Force seller_id to avoid NULL errors
+    private User seller;
 
     @Column(name = "bid_amount", nullable = false)
     private BigDecimal bidAmount;
 
-    public void updateFromRO(BidRO bidRO, Item item, User user) {
+    @Column(name = "bid_time", nullable = false, updatable = false)
+    private LocalDateTime bidTime;
+
+    @PrePersist
+    protected void onCreate() {
+        if (bidTime == null) {
+            bidTime = LocalDateTime.now();
+        }
+    }
+
+    public void updateFromRO(BidRO bidRO, Item item, User customer, User seller) {
         this.item = item;
-        this.user = user;
+        this.customer = customer;
+        this.user = customer; // ✅ Set user_id as customer
+        this.seller = seller; // ✅ Set seller_id from the item seller
         this.bidAmount = bidRO.getBidAmount();
+        this.bidTime = LocalDateTime.now();
     }
 }
