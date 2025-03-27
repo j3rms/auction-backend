@@ -37,13 +37,14 @@ public class ItemService {
         }
     }
 
-    public List<Item> getAllByStatus(ItemStatus status) {
+    public List<Item> getAllByFilter(ItemStatus status, Long categoryId) {
         try {
-            return itemRepository.findAllByStatus(status);
+            return itemRepository.findAllByOptionalFilters(status, categoryId);
         } catch (Exception e) {
             throw new ServiceException(MessageUtils.retrieveError("Filtered Items"), e);
         }
     }
+
 
     public Item getItemById(Long id) {
         return itemRepository.findById(id).orElseThrow(() ->

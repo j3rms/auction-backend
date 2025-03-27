@@ -32,29 +32,24 @@ public class BidService {
         User customer = userRepository.findById(bidRO.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
     
-        User seller = item.getSeller(); // ✅ Get the seller from the item
+        User seller = item.getSeller();
     
-        // ✅ Ensure only customers can place bids
         if (customer.getRole() != Role.CUSTOMER) {
             throw new IllegalArgumentException("Only customers can place bids.");
         }
     
-        // ✅ Get the last highest bid
         Optional<Bid> lastBidOpt = bidRepository.findByItemId(item.getId()).stream()
                 .max((b1, b2) -> b1.getBidAmount().compareTo(b2.getBidAmount()));
     
         BigDecimal lastBidAmount = lastBidOpt.map(Bid::getBidAmount).orElse(item.getStartingPrice());
     
-        // ✅ Use a default bid increment
         BigDecimal bidIncrement = BigDecimal.ONE;
         BigDecimal minNextBid = lastBidAmount.add(bidIncrement);
     
-        // ✅ Ensure the bid follows the increment rule
         if (bidRO.getBidAmount().compareTo(minNextBid) < 0) {
             throw new IllegalArgumentException("Bid must be at least " + minNextBid);
         }
     
-        // ✅ Create and save the bid
         Bid bid = new Bid();
         bid.updateFromRO(bidRO, item, customer, seller);
         bid.setBidTime(LocalDateTime.now());
@@ -72,7 +67,7 @@ public class BidService {
     }
 
     public List<Bid> getBidsByUser(Long customerId) {  
-        return bidRepository.findByCustomerId(customerId);  // ✅ Ensure repository method matches "customer_id"
+        return bidRepository.findByCustomerId(customerId);
     }
 
     public void deleteBid(Long bidId) {

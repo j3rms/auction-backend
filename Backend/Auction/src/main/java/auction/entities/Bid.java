@@ -29,11 +29,11 @@ public class Bid {
     private User customer;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false)  // ✅ Force user_id to avoid NULL errors
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "seller_id", nullable = false)  // ✅ Force seller_id to avoid NULL errors
+    @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
     @Column(name = "bid_amount", nullable = false)
@@ -52,8 +52,8 @@ public class Bid {
     public void updateFromRO(BidRO bidRO, Item item, User customer, User seller) {
         this.item = item;
         this.customer = customer;
-        this.user = customer; // ✅ Set user_id as customer
-        this.seller = seller; // ✅ Set seller_id from the item seller
+        this.user = customer;
+        this.seller = seller;
         this.bidAmount = bidRO.getBidAmount();
         this.bidTime = LocalDateTime.now();
     }

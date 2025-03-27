@@ -18,7 +18,7 @@ public class BidDTO {
     public BidDTO(Bid bid) {
         this.id = bid.getId();
         this.bidAmount = bid.getBidAmount();
-        this.customer = new UserDTO(bid.getCustomer()); // Minimal customer details
-        this.seller = new UserDTO(bid.getSeller());     // Minimal seller details
+        this.customer = new UserDTO(bid.getCustomer());
+        this.seller = new UserDTO(bid.getSeller());
     }
 }
