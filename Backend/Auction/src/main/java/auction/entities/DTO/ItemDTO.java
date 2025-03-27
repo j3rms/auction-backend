@@ -17,6 +17,7 @@ public class ItemDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    private Long id;  // ✅ Add this
     private String name;
     private String description;
     private BigDecimal startingPrice;
@@ -24,6 +25,7 @@ public class ItemDTO implements Serializable {
     private UserDTO seller; // Reference to UserDTO
 
     public ItemDTO(Item item) {
+        this.id = item.getId();  // ✅ Ensure ID is included
         this.name = item.getName();
         this.description = item.getDescription();
         this.startingPrice = item.getStartingPrice();
