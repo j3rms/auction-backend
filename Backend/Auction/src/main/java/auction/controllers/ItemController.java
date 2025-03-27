@@ -1,42 +1,68 @@
 package auction.controllers;
 
-import auction.entities.Item;
 import auction.entities.RO.ItemRO;
+import auction.entities.utils.MessageUtils;
+import auction.entities.utils.ResponseUtils;
 import auction.services.ItemService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/items")
+@RequestMapping("/api/item")
+@RequiredArgsConstructor
 public class ItemController {
 
-    @Autowired
-    private ItemService itemService;
+    private final ItemService itemService;
 
     @GetMapping
-    public List<Item> getAllItems() {
-        return itemService.getAllItems();
+    public ResponseEntity<?> getAllItems() {
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
+                HttpStatus.OK, MessageUtils.retrieveSuccess("Items"), itemService.getAll()
+        ));
     }
 
     @GetMapping("/{id}")
-    public Item getItemById(@PathVariable Long id) {
-        return itemService.getItemById(id).orElseThrow(() -> new RuntimeException("Item not found"));
+    public ResponseEntity<?> getItemById(@PathVariable Long id) {
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
+                HttpStatus.OK, MessageUtils.retrieveSuccess("Item"), itemService.getItemById(id)
+        ));
     }
 
     @PostMapping
-    public Item createItem(@RequestBody ItemRO itemRO) {
-        return itemService.createItem(itemRO);
+    public ResponseEntity<?> createItem(@Valid @RequestBody ItemRO itemRO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(ResponseUtils.buildErrorResponse(
+                    HttpStatus.BAD_REQUEST, MessageUtils.validationErrors(bindingResult)
+            ));
+        }
+        itemService.save(itemRO);
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
+                HttpStatus.CREATED, MessageUtils.saveSuccess("Item")
+        ));
     }
 
     @PutMapping("/{id}")
-    public Item updateItem(@PathVariable Long id, @RequestBody ItemRO itemRO) {
-        return itemService.updateItem(id, itemRO);
+    public ResponseEntity<?> updateItem(@PathVariable Long id, @Valid @RequestBody ItemRO itemRO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(ResponseUtils.buildErrorResponse(
+                    HttpStatus.BAD_REQUEST, MessageUtils.validationErrors(bindingResult)
+            ));
+        }
+        itemService.update(id, itemRO);
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
+                HttpStatus.OK, MessageUtils.updateSuccess("Item")
+        ));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteItem(@PathVariable Long id) {
-        itemService.deleteItem(id);
+    public ResponseEntity<?> deleteItem(@PathVariable Long id) {
+        itemService.delete(id);
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
+                HttpStatus.OK, MessageUtils.deleteSuccess("Item")
+        ));
     }
 }
