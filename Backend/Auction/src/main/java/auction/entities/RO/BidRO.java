@@ -12,15 +12,15 @@ import java.math.BigDecimal;
 public class BidRO {
     private BigDecimal bidAmount;
     private ItemRO item;
-    private UserRO user;
+    private UserRO customer;  // ✅ Updated "user" to "customer"
     private Long itemId;
-    private Long userId;
+    private Long customerId;  // ✅ Updated "userId" to "customerId"
 
-    public auction.entities.Bid toEntity(auction.entities.Item item, auction.entities.User user) {
+    public auction.entities.Bid toEntity(auction.entities.Item item, auction.entities.User customer) {
         return auction.entities.Bid.builder()
                 .bidAmount(this.bidAmount)
                 .item(item)
-                .user(user)
+                .customer(customer)  // ✅ Fix: Use "customer" instead of "user"
                 .build();
     }
 }
