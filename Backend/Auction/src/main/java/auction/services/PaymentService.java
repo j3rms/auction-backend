@@ -33,7 +33,7 @@ public class PaymentService {
                 .orElseThrow(() -> new EntityNotFoundException("Bid not found"));
 
         User customer = bid.getCustomer();
-        User seller = bid.getSeller();
+        // User seller = bid.getSeller();
         BigDecimal amount = bid.getBidAmount();
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -43,7 +43,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .bid(bid)
                 .customer(customer)
-                .seller(seller)
+                // .seller(seller)
                 .amount(amount)
                 .paymentStatus(PaymentStatus.UNPAID) // Default payment status
                 .transactionTime(LocalDateTime.now())

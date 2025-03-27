@@ -4,6 +4,7 @@ import auction.entities.Bid;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -12,13 +13,16 @@ import java.math.BigDecimal;
 public class BidDTO {
     private Long id;
     private BigDecimal bidAmount;
-    private UserDTO customer;
-    private UserDTO seller;
+    private LocalDateTime bidTime;
+    private UserDTO customer; // ✅ Only the bidder (customer)
+    private ItemDTO item;     // ✅ Item contains the seller inside
 
     public BidDTO(Bid bid) {
         this.id = bid.getId();
         this.bidAmount = bid.getBidAmount();
-        this.customer = new UserDTO(bid.getCustomer()); // Minimal customer details
-        this.seller = new UserDTO(bid.getSeller());     // Minimal seller details
+        this.bidTime = bid.getBidTime();
+        this.customer = new UserDTO(bid.getCustomer()); // ✅ Minimal customer info
+        this.item = new ItemDTO(bid.getItem()); // ✅ Uses updated ItemDTO (which includes id)
     }
+    
 }

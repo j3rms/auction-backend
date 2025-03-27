@@ -28,40 +28,36 @@ public class BidService {
     public Bid placeBid(BidRO bidRO) {
         Item item = itemRepository.findById(bidRO.getItemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
-    
+
         User customer = userRepository.findById(bidRO.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
-    
-        User seller = item.getSeller(); // ✅ Get the seller from the item
-    
+
         // ✅ Ensure only customers can place bids
         if (customer.getRole() != Role.CUSTOMER) {
             throw new IllegalArgumentException("Only customers can place bids.");
         }
-    
+
         // ✅ Get the last highest bid
         Optional<Bid> lastBidOpt = bidRepository.findByItemId(item.getId()).stream()
                 .max((b1, b2) -> b1.getBidAmount().compareTo(b2.getBidAmount()));
-    
+
         BigDecimal lastBidAmount = lastBidOpt.map(Bid::getBidAmount).orElse(item.getStartingPrice());
-    
-        // ✅ Use a default bid increment
+
+        // ✅ Enforce bid increment
         BigDecimal bidIncrement = BigDecimal.ONE;
         BigDecimal minNextBid = lastBidAmount.add(bidIncrement);
-    
-        // ✅ Ensure the bid follows the increment rule
+
         if (bidRO.getBidAmount().compareTo(minNextBid) < 0) {
             throw new IllegalArgumentException("Bid must be at least " + minNextBid);
         }
-    
+
         // ✅ Create and save the bid
         Bid bid = new Bid();
-        bid.updateFromRO(bidRO, item, customer, seller);
+        bid.updateFromRO(bidRO, item, customer);
         bid.setBidTime(LocalDateTime.now());
-    
+
         return bidRepository.save(bid);
     }
-    
 
     public List<Bid> getAllBids() {
         return bidRepository.findAll();
@@ -71,8 +67,8 @@ public class BidService {
         return bidRepository.findByItemId(itemId);
     }
 
-    public List<Bid> getBidsByUser(Long customerId) {  
-        return bidRepository.findByCustomerId(customerId);  // ✅ Ensure repository method matches "customer_id"
+    public List<Bid> getBidsByUser(Long customerId) {
+        return bidRepository.findByCustomerId(customerId);
     }
 
     public void deleteBid(Long bidId) {
@@ -81,4 +77,11 @@ public class BidService {
         }
         bidRepository.deleteById(bidId);
     }
+
+    public List<Bid> getAllByFilter(Long itemId, Long customerId) {
+        return bidRepository.findByFilter(itemId, customerId);
+    }
+
+
+    
 }
