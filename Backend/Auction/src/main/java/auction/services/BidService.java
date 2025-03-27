@@ -33,25 +33,25 @@ public class BidService {
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
     
         User seller = item.getSeller();
-    
+
         if (customer.getRole() != Role.CUSTOMER) {
             throw new IllegalArgumentException("Only customers can place bids.");
         }
-    
+
         Optional<Bid> lastBidOpt = bidRepository.findByItemId(item.getId()).stream()
                 .max((b1, b2) -> b1.getBidAmount().compareTo(b2.getBidAmount()));
     
         BigDecimal lastBidAmount = lastBidOpt.map(Bid::getBidAmount).orElse(item.getStartingPrice());
-    
+
         BigDecimal bidIncrement = BigDecimal.ONE;
         BigDecimal minNextBid = lastBidAmount.add(bidIncrement);
-    
+
         if (bidRO.getBidAmount().compareTo(minNextBid) < 0) {
             throw new IllegalArgumentException("Bid must be at least " + minNextBid);
         }
-    
+
         Bid bid = new Bid();
-        bid.updateFromRO(bidRO, item, customer, seller);
+        bid.updateFromRO(bidRO, item, customer);
         bid.setBidTime(LocalDateTime.now());
     
         return bidRepository.save(bid);
@@ -76,4 +76,11 @@ public class BidService {
         }
         bidRepository.deleteById(bidId);
     }
+
+    public List<Bid> getAllByFilter(Long itemId, Long customerId) {
+        return bidRepository.findByFilter(itemId, customerId);
+    }
+
+
+
 }

@@ -49,7 +49,7 @@ public class Bid {
         }
     }
 
-    public void updateFromRO(BidRO bidRO, Item item, User customer, User seller) {
+    public void updateFromRO(BidRO bidRO, Item item, User customer) {
         this.item = item;
         this.customer = customer;
         this.user = customer;

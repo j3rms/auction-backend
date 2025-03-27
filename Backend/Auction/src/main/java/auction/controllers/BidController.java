@@ -1,6 +1,7 @@
 package auction.controllers;
 
 import auction.entities.Bid;
+import auction.entities.DTO.BidDTO;
 import auction.entities.RO.BidRO;
 import auction.services.BidService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/bids")
@@ -17,29 +19,54 @@ public class BidController {
     private final BidService bidService;
 
     @PostMapping
-    public ResponseEntity<Bid> placeBid(@RequestBody BidRO bidRO) {
+    public ResponseEntity<BidDTO> placeBid(@RequestBody BidRO bidRO) {
         Bid bid = bidService.placeBid(bidRO);
-        return ResponseEntity.ok(bid);
+        return ResponseEntity.ok(new BidDTO(bid));
     }
 
     @GetMapping
-    public ResponseEntity<List<Bid>> getAllBids() {
-        return ResponseEntity.ok(bidService.getAllBids());
+    public ResponseEntity<List<BidDTO>> getAllBids() {
+        List<BidDTO> bids = bidService.getAllBids()
+                                      .stream()
+                                      .map(BidDTO::new)
+                                      .collect(Collectors.toList());
+        return ResponseEntity.ok(bids);
     }
 
     @GetMapping("/item/{itemId}")
-    public ResponseEntity<List<Bid>> getBidsByItem(@PathVariable Long itemId) {
-        return ResponseEntity.ok(bidService.getBidsByItem(itemId));
+    public ResponseEntity<List<BidDTO>> getBidsByItem(@PathVariable Long itemId) {
+        List<BidDTO> bids = bidService.getBidsByItem(itemId)
+                                      .stream()
+                                      .map(BidDTO::new)
+                                      .collect(Collectors.toList());
+        return ResponseEntity.ok(bids);
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Bid>> getBidsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(bidService.getBidsByUser(userId));
+    public ResponseEntity<List<BidDTO>> getBidsByUser(@PathVariable Long userId) {
+        List<BidDTO> bids = bidService.getBidsByUser(userId)
+                                      .stream()
+                                      .map(BidDTO::new)
+                                      .collect(Collectors.toList());
+        return ResponseEntity.ok(bids);
     }
 
     @DeleteMapping("/{bidId}")
     public ResponseEntity<Void> deleteBid(@PathVariable Long bidId) {
         bidService.deleteBid(bidId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<BidDTO>> getAllByFilter(
+            @RequestParam(required = false) Long itemId,
+            @RequestParam(required = false) Long customerId) {
+
+        List<BidDTO> bids = bidService.getAllByFilter(itemId, customerId)
+                .stream()
+                .map(BidDTO::new)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(bids);
     }
 }
