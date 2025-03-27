@@ -13,6 +13,7 @@ public class UserRO {
     private String username;
     private String email;
     private String password;
+    private Long userId;
     private Role role;
 
     public User toEntity() {
