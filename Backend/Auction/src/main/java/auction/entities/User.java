@@ -21,6 +21,12 @@ public class User {
     @Column(name = "user_id", columnDefinition = "BIGINT")
     private Long id;
 
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
     @Column(name = "username", nullable = false)
     private String username;
 
@@ -39,6 +45,8 @@ public class User {
     private LocalDateTime createdAt;
 
     public void updateFromRO(UserRO userRO) {
+        this.firstName = userRO.getFirstName();
+        this.lastName = userRO.getLastName();
         this.username = userRO.getUsername();
         this.email = userRO.getEmail();
         this.password = userRO.getPassword();
