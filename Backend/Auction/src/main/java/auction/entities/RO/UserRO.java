@@ -10,6 +10,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserRO {
+    private String firstName;
+    private String lastName;
     private String username;
     private String email;
     private String password;
@@ -17,6 +19,8 @@ public class UserRO {
 
     public User toEntity() {
         return User.builder()
+                .firstName(this.firstName)
+                .lastName(this.lastName)
                 .username(this.username)
                 .email(this.email)
                 .password(this.password)
