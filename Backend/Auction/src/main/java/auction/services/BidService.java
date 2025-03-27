@@ -28,11 +28,14 @@ public class BidService {
     public Bid placeBid(BidRO bidRO) {
         Item item = itemRepository.findById(bidRO.getItemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
-    
+
         User customer = userRepository.findById(bidRO.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
-    
+
         User seller = item.getSeller();
+        if (seller == null) {
+            throw new IllegalArgumentException("Item must have a seller before bidding.");
+        }
 
         if (customer.getRole() != Role.CUSTOMER) {
             throw new IllegalArgumentException("Only customers can place bids.");
@@ -40,9 +43,8 @@ public class BidService {
 
         Optional<Bid> lastBidOpt = bidRepository.findByItemId(item.getId()).stream()
                 .max((b1, b2) -> b1.getBidAmount().compareTo(b2.getBidAmount()));
-    
-        BigDecimal lastBidAmount = lastBidOpt.map(Bid::getBidAmount).orElse(item.getStartingPrice());
 
+        BigDecimal lastBidAmount = lastBidOpt.map(Bid::getBidAmount).orElse(item.getStartingPrice());
         BigDecimal bidIncrement = BigDecimal.ONE;
         BigDecimal minNextBid = lastBidAmount.add(bidIncrement);
 
@@ -52,11 +54,12 @@ public class BidService {
 
         Bid bid = new Bid();
         bid.updateFromRO(bidRO, item, customer);
+        bid.setSeller(seller);
         bid.setBidTime(LocalDateTime.now());
-    
+
         return bidRepository.save(bid);
     }
-    
+
 
     public List<Bid> getAllBids() {
         return bidRepository.findAll();
