@@ -4,13 +4,15 @@ import auction.entities.RO.UserRO;
 import auction.entities.User;
 import auction.entities.enums.Role;
 import auction.entities.utils.MessageUtils;
+import auction.entities.utils.ResponseUtils;
 import auction.exceptions.ServiceException;
 import auction.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import java.util.List;
 
 @Service
@@ -76,4 +78,29 @@ public class UserService {
             throw new ServiceException(MessageUtils.deleteError("User"), e);
         }
     }
+
+    @Transactional
+    public ResponseEntity<?> login(String username, String password) {
+        try {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ServiceException(MessageUtils.userNotFound("User"),
+                            new RuntimeException("User not found")));
+
+            if (password.equals(user.getPassword())) {
+                return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
+                        HttpStatus.OK, MessageUtils.loginSuccess("User")));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ResponseUtils.buildErrorResponse(
+                        HttpStatus.UNAUTHORIZED, MessageUtils.loginFailed("User")));
+            }
+        } catch (ServiceException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ResponseUtils.buildErrorResponse(
+                    HttpStatus.NOT_FOUND, MessageUtils.userNotFound("User")));
+        } catch (Exception e) {
+            log.error(MessageUtils.loginFailed("User"), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ResponseUtils.buildErrorResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR, MessageUtils.loginFailed("User")));
+        }
+    }
+
 }

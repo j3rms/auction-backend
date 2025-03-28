@@ -10,6 +10,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserRO {
+
+    private Long userId;
     private String firstName;
     private String lastName;
     private String username;

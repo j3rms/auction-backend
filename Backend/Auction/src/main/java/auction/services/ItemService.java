@@ -1,6 +1,7 @@
 package auction.services;
 
 import auction.entities.Category;
+import auction.entities.DTO.ItemDTO;
 import auction.entities.Item;
 import auction.entities.RO.ItemRO;
 import auction.entities.User;
@@ -15,10 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -37,9 +38,9 @@ public class ItemService {
         }
     }
 
-    public List<Item> getAllByStatus(ItemStatus status) {
+    public List<Item> getAllByFilter(ItemStatus status, Long categoryId) {
         try {
-            return itemRepository.findAllByStatus(status);
+            return itemRepository.findAllByOptionalFilters(status, categoryId);
         } catch (Exception e) {
             throw new ServiceException(MessageUtils.retrieveError("Filtered Items"), e);
         }
@@ -64,7 +65,7 @@ public class ItemService {
                     .orElseThrow(() -> new ServiceException("Category not found", new RuntimeException()));
 
             Item item = itemRO.toEntity(seller, category);
-
+            item.setImageBase64(itemRO.getImageBase64());
 
             itemRepository.save(item);
             log.info(MessageUtils.saveSuccess("Item"));
@@ -73,16 +74,40 @@ public class ItemService {
         }
     }
 
+
     @Transactional
     public void update(Long id, ItemRO itemRO) {
         try {
             Item existingItem = getItemById(id);
             existingItem.updateFromRO(itemRO);
-
             itemRepository.save(existingItem);
             log.info(MessageUtils.updateSuccess("Item"));
         } catch (Exception e) {
             throw new ServiceException(MessageUtils.updateError("Item"), e);
+        }
+    }
+
+    @Transactional
+    public ItemDTO updateItemStatus(Long itemId, Long adminId, ItemStatus status) {
+        try {
+            Item item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new ServiceException("Item not found", new RuntimeException()));
+
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ServiceException("Admin not found", new RuntimeException()));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ServiceException("Only admins can change item status", new RuntimeException());
+            }
+
+            item.setStatus(status);
+            item.setApprovedAt(status == ItemStatus.APPROVED ? LocalDateTime.now() : null);
+            item.setAdmin(status == ItemStatus.APPROVED ? admin : null);
+
+            itemRepository.save(item);
+            return new ItemDTO(item);
+        } catch (Exception e) {
+            throw new ServiceException("Failed to change item status", e);
         }
     }
 
