@@ -5,6 +5,7 @@ import auction.entities.DTO.ItemDTO;
 import auction.entities.Item;
 import auction.entities.RO.ItemRO;
 import auction.entities.User;
+import auction.entities.enums.AuctionStatus;
 import auction.entities.enums.ItemStatus;
 import auction.entities.enums.Role;
 import auction.entities.utils.MessageUtils;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,8 +47,8 @@ public class ItemService {
     }
 
     public Item getItemById(Long id) {
-        return itemRepository.findById(id).orElseThrow(() ->
-                new ServiceException(MessageUtils.notFound("Item"), new RuntimeException("Item not found")));
+        return itemRepository.findById(id)
+                .orElseThrow(() -> new ServiceException(MessageUtils.notFound("Item"), new RuntimeException("Item not found")));
     }
 
     @Transactional
@@ -67,6 +67,10 @@ public class ItemService {
             Item item = itemRO.toEntity(seller, category);
             item.setImageBase64(itemRO.getImageBase64());
 
+            // Newly saved items should always be pending approval
+            item.setStatus(ItemStatus.PENDING);
+            item.setAuctionStatus(AuctionStatus.NOT_STARTED);
+
             itemRepository.save(item);
             log.info(MessageUtils.saveSuccess("Item"));
         } catch (Exception e) {
@@ -74,12 +78,22 @@ public class ItemService {
         }
     }
 
-
     @Transactional
     public void update(Long id, ItemRO itemRO) {
         try {
             Item existingItem = getItemById(id);
             existingItem.updateFromRO(itemRO);
+
+            // Only update auction status if the item is APPROVED
+            if (existingItem.getStartTime() != null
+                    && existingItem.getStartTime().isBefore(LocalDateTime.now())
+                    && existingItem.getStatus() == ItemStatus.APPROVED) {
+
+                existingItem.setAuctionStatus(AuctionStatus.ACTIVE);
+            } else {
+                existingItem.setAuctionStatus(AuctionStatus.NOT_STARTED);
+            }
+
             itemRepository.save(existingItem);
             log.info(MessageUtils.updateSuccess("Item"));
         } catch (Exception e) {
@@ -104,6 +118,16 @@ public class ItemService {
             item.setApprovedAt(status == ItemStatus.APPROVED ? LocalDateTime.now() : null);
             item.setAdmin(status == ItemStatus.APPROVED ? admin : null);
 
+            // If item is approved and start time has already passed, activate auction
+            if (status == ItemStatus.APPROVED
+                    && item.getStartTime() != null
+                    && item.getStartTime().isBefore(LocalDateTime.now())) {
+
+                item.setAuctionStatus(AuctionStatus.ACTIVE);
+            } else {
+                item.setAuctionStatus(AuctionStatus.NOT_STARTED);
+            }
+
             itemRepository.save(item);
             return new ItemDTO(item);
         } catch (Exception e) {
@@ -119,6 +143,27 @@ public class ItemService {
             log.info(MessageUtils.deleteSuccess("Item"));
         } catch (Exception e) {
             throw new ServiceException(MessageUtils.deleteError("Item"), e);
+        }
+    }
+
+    @Transactional
+    public void updateAuctionStatus() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            List<Item> items = itemRepository.findAll();
+
+            for (Item item : items) {
+                if (item.getAuctionStatus() == AuctionStatus.NOT_STARTED
+                        && item.getStartTime() != null
+                        && item.getStartTime().isBefore(now)
+                        && item.getStatus() == ItemStatus.APPROVED) {
+
+                    item.setAuctionStatus(AuctionStatus.ACTIVE);
+                    itemRepository.save(item);
+                }
+            }
+        } catch (Exception e) {
+            throw new ServiceException("Error updating auction status", e);
         }
     }
 }
