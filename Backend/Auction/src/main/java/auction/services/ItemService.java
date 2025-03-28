@@ -1,6 +1,7 @@
 package auction.services;
 
 import auction.entities.Category;
+import auction.entities.DTO.ItemDTO;
 import auction.entities.Item;
 import auction.entities.RO.ItemRO;
 import auction.entities.User;
@@ -15,10 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -45,7 +46,6 @@ public class ItemService {
         }
     }
 
-
     public Item getItemById(Long id) {
         return itemRepository.findById(id).orElseThrow(() ->
                 new ServiceException(MessageUtils.notFound("Item"), new RuntimeException("Item not found")));
@@ -66,7 +66,6 @@ public class ItemService {
 
             Item item = itemRO.toEntity(seller, category);
 
-
             itemRepository.save(item);
             log.info(MessageUtils.saveSuccess("Item"));
         } catch (Exception e) {
@@ -79,11 +78,34 @@ public class ItemService {
         try {
             Item existingItem = getItemById(id);
             existingItem.updateFromRO(itemRO);
-
             itemRepository.save(existingItem);
             log.info(MessageUtils.updateSuccess("Item"));
         } catch (Exception e) {
             throw new ServiceException(MessageUtils.updateError("Item"), e);
+        }
+    }
+
+    @Transactional
+    public ItemDTO updateItemStatus(Long itemId, Long adminId, ItemStatus status) {
+        try {
+            Item item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new ServiceException("Item not found", new RuntimeException()));
+
+            User admin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new ServiceException("Admin not found", new RuntimeException()));
+
+            if (admin.getRole() != Role.ADMIN) {
+                throw new ServiceException("Only admins can change item status", new RuntimeException());
+            }
+
+            item.setStatus(status);
+            item.setApprovedAt(status == ItemStatus.APPROVED ? LocalDateTime.now() : null);
+            item.setAdmin(status == ItemStatus.APPROVED ? admin : null);
+
+            itemRepository.save(item);
+            return new ItemDTO(item);
+        } catch (Exception e) {
+            throw new ServiceException("Failed to change item status", e);
         }
     }
 

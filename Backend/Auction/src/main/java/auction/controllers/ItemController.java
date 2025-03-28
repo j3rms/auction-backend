@@ -1,6 +1,7 @@
 package auction.controllers;
 
 import auction.entities.Category;
+import auction.entities.DTO.ItemDTO;
 import auction.entities.Item;
 import auction.entities.RO.ItemRO;
 import auction.entities.enums.ItemStatus;
@@ -82,6 +83,15 @@ public class ItemController {
         return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
                 HttpStatus.OK, MessageUtils.updateSuccess("Item")
         ));
+    }
+
+    @PutMapping("/{itemId}/status")
+    public ResponseEntity<ItemDTO> updateItemStatus(
+            @PathVariable Long itemId,
+            @RequestParam Long adminId,
+            @RequestParam ItemStatus status) {
+        ItemDTO updatedItem = itemService.updateItemStatus(itemId, adminId, status);
+        return ResponseEntity.ok(updatedItem);
     }
 
     @DeleteMapping("/{id}")
