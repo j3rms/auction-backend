@@ -37,8 +37,16 @@ public class BidService {
             throw new IllegalArgumentException("Item must have a seller before bidding.");
         }
 
-        if (customer.getRole() != Role.CUSTOMER) {
-            throw new IllegalArgumentException("Only customers can place bids.");
+        if (customer.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException("Admins cannot place bids.");
+        }
+
+        if (customer.getId().equals(seller.getId())) {
+            throw new IllegalArgumentException("You cannot bid on your own item.");
+        }
+
+        if (customer.getRole() != Role.CUSTOMER && customer.getRole() != Role.SELLER) {
+            throw new IllegalArgumentException("Only customers or sellers can place bids.");
         }
 
         Optional<Bid> lastBidOpt = bidRepository.findByItemId(item.getId()).stream()

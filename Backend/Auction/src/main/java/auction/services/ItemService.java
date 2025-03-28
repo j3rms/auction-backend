@@ -65,6 +65,7 @@ public class ItemService {
                     .orElseThrow(() -> new ServiceException("Category not found", new RuntimeException()));
 
             Item item = itemRO.toEntity(seller, category);
+            item.setImageBase64(itemRO.getImageBase64());
 
             itemRepository.save(item);
             log.info(MessageUtils.saveSuccess("Item"));
@@ -72,6 +73,7 @@ public class ItemService {
             throw new ServiceException(MessageUtils.saveError("Item"), e);
         }
     }
+
 
     @Transactional
     public void update(Long id, ItemRO itemRO) {

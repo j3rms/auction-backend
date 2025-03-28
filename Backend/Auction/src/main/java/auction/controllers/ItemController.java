@@ -1,11 +1,9 @@
 package auction.controllers;
 
-import auction.entities.Category;
 import auction.entities.DTO.ItemDTO;
 import auction.entities.Item;
 import auction.entities.RO.ItemRO;
 import auction.entities.enums.ItemStatus;
-import auction.entities.response.SuccessResponse;
 import auction.entities.utils.MessageUtils;
 import auction.entities.utils.ResponseUtils;
 import auction.services.ItemService;
@@ -16,7 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Base64;
 import java.util.List;
 
 @RestController
@@ -59,18 +59,37 @@ public class ItemController {
         ));
     }
 
-    @PostMapping
-    public ResponseEntity<?> createItem(@Valid @RequestBody ItemRO itemRO, BindingResult bindingResult) {
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<?> createItem(
+            @Valid @ModelAttribute ItemRO itemRO,
+            @RequestParam("image") MultipartFile image,
+            BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return ResponseEntity.badRequest().body(ResponseUtils.buildErrorResponse(
                     HttpStatus.BAD_REQUEST, MessageUtils.validationErrors(bindingResult)
             ));
         }
-        itemService.save(itemRO);
-        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
-                HttpStatus.CREATED, MessageUtils.saveSuccess("Item")
-        ));
+
+        try {
+            if (!image.isEmpty()) {
+                String mimeType = image.getContentType();
+                String base64Image = "data:" + mimeType + ";base64," +
+                        Base64.getEncoder().encodeToString(image.getBytes());
+                itemRO.setImageBase64(base64Image);
+            }
+
+            itemService.save(itemRO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ResponseUtils.buildSuccessResponse(
+                    HttpStatus.CREATED, MessageUtils.saveSuccess("Item")
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ResponseUtils.buildErrorResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload image"
+            ));
+        }
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateItem(@PathVariable Long id, @Valid @RequestBody ItemRO itemRO, BindingResult bindingResult) {

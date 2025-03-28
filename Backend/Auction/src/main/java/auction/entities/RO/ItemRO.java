@@ -31,6 +31,8 @@ public class ItemRO {
     private ItemStatus status;
     private Long categoryId;
     private Long sellerId;
+    private String imageBase64;
+
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
@@ -42,6 +44,7 @@ public class ItemRO {
 
     public Item toEntity(User seller, Category category) {
         Item item = Item.builder()
+                .imageBase64(this.imageBase64)
                 .name(this.name)
                 .description(this.description)
                 .startingPrice(this.startingPrice != null ? this.startingPrice : BigDecimal.ZERO)
