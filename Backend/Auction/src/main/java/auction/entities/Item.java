@@ -71,6 +71,9 @@ public class Item {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "image_base64", columnDefinition = "TEXT")
+    private String imageBase64;
+
     public void updateFromRO(ItemRO itemRO) {
         this.name = itemRO.getName();
         this.description = itemRO.getDescription();
@@ -80,5 +83,6 @@ public class Item {
         this.startTime = itemRO.getStartTime();
         this.endTime = itemRO.getEndTime();
         this.auctionStatus = itemRO.getAuctionStatus();
+        this.imageBase64 = itemRO.getImageBase64();
     }
 }

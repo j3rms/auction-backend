@@ -26,7 +26,15 @@ public class Bid {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
-    private User customer; // ✅ Only the bidder (customer)
+    private User customer;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private User seller;
 
     @Column(name = "bid_amount", nullable = false)
     private BigDecimal bidAmount;
@@ -44,6 +52,8 @@ public class Bid {
     public void updateFromRO(BidRO bidRO, Item item, User customer) {
         this.item = item;
         this.customer = customer;
+        this.user = customer;
+        this.seller = seller;
         this.bidAmount = bidRO.getBidAmount();
         this.bidTime = LocalDateTime.now();
     }

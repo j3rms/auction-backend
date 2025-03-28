@@ -80,4 +80,9 @@ public class UserController {
                 HttpStatus.OK, MessageUtils.deleteSuccess("User")
         ));
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody UserRO userRO) {
+        return userService.login(userRO.getUsername(), userRO.getPassword());
+    }
 }

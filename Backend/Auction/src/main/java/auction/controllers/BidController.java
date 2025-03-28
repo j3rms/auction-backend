@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/bids")
+@RequestMapping("/api/bid")
 @RequiredArgsConstructor
 public class BidController {
 

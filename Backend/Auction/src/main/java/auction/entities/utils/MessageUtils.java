@@ -10,8 +10,10 @@ public class MessageUtils {
     // Login messages
     public static final String LOGIN_SUCCESS = "Successfully logged in.";
     public static final String LOGIN_ERROR = "Login attempt failed.";
-    public static final String LOGIN_FAILED = "Invalid email or password.";
     public static final String LOGIN_EXCEPTION = "Error during login: {}";
+    public static final String LOGIN_FAILED = "Invalid password.";
+    public static final String USER_NOT_FOUND = "User does not exist.";
+
 
     // Donor messages
     public static final String DONOR_REGISTRATION_SUCCESS = "Donor registration successful.";
@@ -107,8 +109,16 @@ public class MessageUtils {
         return String.format(ALREADY_EXISTS, value);
     }
 
-    public static String inventoryLowAlert(String bloodType) {
-        return String.format(INVENTORY_LOW_ALERT, bloodType);
+    public static String loginSuccess(String value) {
+        return String.format(LOGIN_SUCCESS, value);
+    }
+
+    public static String loginFailed(String value) {
+        return String.format(LOGIN_FAILED, value);
+    }
+
+    public static String userNotFound(String value) {
+        return String.format(USER_NOT_FOUND, value);
     }
 
     public static String validationErrors(BindingResult bindingResult) {
