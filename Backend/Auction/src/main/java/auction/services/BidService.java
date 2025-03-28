@@ -3,6 +3,7 @@ package auction.services;
 import auction.entities.Bid;
 import auction.entities.Item;
 import auction.entities.User;
+import auction.entities.enums.AuctionStatus;
 import auction.entities.enums.Role;
 import auction.entities.RO.BidRO;
 import auction.repositories.BidRepository;
@@ -28,6 +29,10 @@ public class BidService {
     public Bid placeBid(BidRO bidRO) {
         Item item = itemRepository.findById(bidRO.getItemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        if (!item.getAuctionStatus().equals(AuctionStatus.ACTIVE)) {
+            throw new IllegalArgumentException("Bidding is only allowed when the auction is ACTIVE.");
+        }
 
         User customer = userRepository.findById(bidRO.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));

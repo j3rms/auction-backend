@@ -37,7 +37,7 @@ public class Item {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "LONGTEXT")
     private String description;
 
     @Column(name = "starting_price", nullable = false, precision = 10, scale = 2)
@@ -71,7 +71,7 @@ public class Item {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "image_base64", columnDefinition = "TEXT")
+    @Column(name = "image_base64", columnDefinition = "LONGTEXT")
     private String imageBase64;
 
     public void updateFromRO(ItemRO itemRO) {
