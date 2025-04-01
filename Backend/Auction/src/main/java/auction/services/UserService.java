@@ -7,12 +7,15 @@ import auction.entities.utils.MessageUtils;
 import auction.entities.utils.ResponseUtils;
 import auction.exceptions.ServiceException;
 import auction.repositories.UserRepository;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+
 import java.util.List;
 
 @Service
@@ -80,13 +83,14 @@ public class UserService {
     }
 
     @Transactional
-    public ResponseEntity<?> login(String username, String password) {
+    public ResponseEntity<?> login(String username, String password, HttpSession session) {
         try {
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ServiceException(MessageUtils.userNotFound("User"),
                             new RuntimeException("User not found")));
 
             if (password.equals(user.getPassword())) {
+                session.setAttribute("loggedInUser", user);
                 return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(
                         HttpStatus.OK, MessageUtils.loginSuccess("User")));
             } else {
@@ -103,4 +107,9 @@ public class UserService {
         }
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpSession session) {
+        session.invalidate();
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(HttpStatus.OK, "Logged out successfully"));
+    }
 }

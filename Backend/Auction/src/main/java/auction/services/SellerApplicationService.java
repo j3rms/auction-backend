@@ -3,6 +3,9 @@ package auction.services;
 import java.util.List;
 import java.util.Optional;
 
+import auction.exceptions.ServiceException;
+import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,51 +34,63 @@ public class SellerApplicationService {
         return sellerApplicationRepository.findById(id);
     }
 
-    public SellerApplication createApplication(SellerApplicationRO applicationRO) {
-        SellerApplication application = applicationRO.toEntity();
-
-        // Fetch the existing user (seller) from DB
-        User user = userRepository.findById(applicationRO.getUser().getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        application.setUser(user);
-
-        // Fetch the existing admin if provided
-        if (applicationRO.getAdmin() != null && applicationRO.getAdmin().getUserId() != null) {
-            User admin = userRepository.findById(applicationRO.getAdmin().getUserId())
-                    .orElseThrow(() -> new RuntimeException("Admin not found"));
-            application.setAdmin(admin);
-        }
-
-        return sellerApplicationRepository.save(application);
-    }
-
-
-    public SellerApplication updateApplication(Long id, SellerApplicationRO applicationRO, Long adminId) {
-        Optional<SellerApplication> existingApplication = sellerApplicationRepository.findById(id);
-        if (existingApplication.isPresent()) {
-            SellerApplication application = existingApplication.get();
-
-            // Fetch the admin user
-            User adminUser = userRepository.findById(adminId)
-                    .orElseThrow(() -> new RuntimeException("Admin not found"));
-
-            // Only allow admins to approve applications
-            if (!adminUser.getRole().equals(Role.ADMIN)) {
-                throw new RuntimeException("Only admins can approve applications.");
+    @Transactional
+    public SellerApplication createApplication(SellerApplicationRO applicationRO, HttpSession session) {
+        try {
+            User loggedInUser = (User) session.getAttribute("user");
+            if (loggedInUser == null) {
+                throw new RuntimeException("User is not logged in");
             }
 
-            // Update fields
-            application.setStatus(applicationRO.getStatus());
-            application.setAppliedAt(applicationRO.getAppliedAt());
-            application.setApprovedAt(applicationRO.getApprovedAt());
+            SellerApplication application = applicationRO.toEntity();
 
-            // Set the admin who approved the application
-            application.setAdmin(adminUser);
+            application.setUser(loggedInUser);
+
+            if (applicationRO.getAdmin() != null && applicationRO.getAdmin().getUserId() != null) {
+                User admin = userRepository.findById(applicationRO.getAdmin().getUserId())
+                        .orElseThrow(() -> new RuntimeException("Admin not found"));
+                application.setAdmin(admin);
+            }
 
             return sellerApplicationRepository.save(application);
+        } catch (Exception e) {
+            throw new ServiceException("Error creating seller application", e);
         }
-        throw new RuntimeException("Application not found");
     }
+
+    @Transactional
+    public SellerApplication updateApplication(Long id, SellerApplicationRO applicationRO, Long adminId, HttpSession session) {
+        try {
+            User loggedInAdmin = (User) session.getAttribute("user");
+            if (loggedInAdmin == null || !loggedInAdmin.getRole().equals(Role.ADMIN)) {
+                throw new RuntimeException("Only admins can approve applications");
+            }
+
+            Optional<SellerApplication> existingApplication = sellerApplicationRepository.findById(id);
+            if (existingApplication.isPresent()) {
+                SellerApplication application = existingApplication.get();
+
+                User adminUser = userRepository.findById(adminId)
+                        .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+                if (!adminUser.getRole().equals(Role.ADMIN)) {
+                    throw new RuntimeException("Only admins can approve applications.");
+                }
+
+                application.setStatus(applicationRO.getStatus());
+                application.setAppliedAt(applicationRO.getAppliedAt());
+                application.setApprovedAt(applicationRO.getApprovedAt());
+
+                application.setAdmin(adminUser);
+
+                return sellerApplicationRepository.save(application);
+            }
+            throw new RuntimeException("Application not found");
+        } catch (Exception e) {
+            throw new ServiceException("Error updating seller application", e);
+        }
+    }
+
 
 
 

@@ -22,15 +22,15 @@ public class Payment {
     @Column(name = "payment_id")
     private Long id;
 
-    @OneToOne(optional = false)  // A payment is linked to one bid
+    @OneToOne(optional = false)
     @JoinColumn(name = "bid_id", nullable = false)
     private Bid bid;
 
-    @ManyToOne(optional = false)  // Customer making the payment
+    @ManyToOne(optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
-    @ManyToOne(optional = false)  // Seller receiving the payment
+    @ManyToOne(optional = false)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 

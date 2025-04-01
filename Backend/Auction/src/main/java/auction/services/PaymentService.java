@@ -5,10 +5,14 @@ import auction.entities.Payment;
 import auction.entities.User;
 import auction.entities.DTO.PaymentDTO;
 import auction.entities.enums.PaymentStatus;
+import auction.entities.enums.Role;
+import auction.exceptions.ServiceException;
 import auction.repositories.BidRepository;
 import auction.repositories.PaymentRepository;
 import auction.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,47 +29,6 @@ public class PaymentService {
     private final BidRepository bidRepository;
     private final UserRepository userRepository;
 
-    /**
-     * Creates a new payment entry when a bid is won.
-     */
-    public PaymentDTO createPayment(Long bidId) {
-        Bid bid = bidRepository.findById(bidId)
-                .orElseThrow(() -> new EntityNotFoundException("Bid not found"));
-
-        User customer = bid.getCustomer();
-        // User seller = bid.getSeller();
-        BigDecimal amount = bid.getBidAmount();
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Invalid bid amount for payment.");
-        }
-
-        Payment payment = Payment.builder()
-                .bid(bid)
-                .customer(customer)
-                // .seller(seller)
-                .amount(amount)
-                .paymentStatus(PaymentStatus.UNPAID) // Default payment status
-                .transactionTime(LocalDateTime.now())
-                .build();
-
-        return new PaymentDTO(paymentRepository.save(payment));
-    }
-
-    /**
-     * Updates the payment status (e.g., UNPAID → COMPLETED).
-     */
-    public PaymentDTO updatePaymentStatus(Long paymentId, PaymentStatus status) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
-
-        payment.setPaymentStatus(status);
-        return new PaymentDTO(paymentRepository.save(payment));
-    }
-
-    /**
-     * Retrieves all payments made by a customer.
-     */
     public List<PaymentDTO> getPaymentsByCustomer(Long customerId) {
         return paymentRepository.findByCustomerId(customerId)
                 .stream()
@@ -73,9 +36,6 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves all payments received by a seller.
-     */
     public List<PaymentDTO> getPaymentsBySeller(Long sellerId) {
         return paymentRepository.findBySellerId(sellerId)
                 .stream()
@@ -83,12 +43,48 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a single payment by ID.
-     */
+
     public PaymentDTO getPaymentById(Long paymentId) {
         return paymentRepository.findById(paymentId)
                 .map(PaymentDTO::new)
                 .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+    }
+
+    @Transactional
+    public PaymentDTO createPayment(Long bidId, HttpSession session) {
+        try {
+            User loggedInUser = (User) session.getAttribute("loggedInUser");
+            if (loggedInUser == null) {
+                throw new ServiceException("Unauthorized. Please log in.", new RuntimeException());
+            }
+
+            Bid bid = bidRepository.findById(bidId)
+                    .orElseThrow(() -> new EntityNotFoundException("Bid not found"));
+
+            User customer = bid.getCustomer();
+            User seller = bid.getItem().getSeller();
+            BigDecimal amount = bid.getBidAmount();
+
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Invalid bid amount for payment.");
+            }
+
+            if (!loggedInUser.getId().equals(customer.getId())) {
+                throw new ServiceException("Only the customer can make this payment.", new RuntimeException());
+            }
+
+            Payment payment = Payment.builder()
+                    .bid(bid)
+                    .customer(customer)
+                    .seller(seller)
+                    .amount(amount)
+                    .paymentStatus(PaymentStatus.COMPLETED)
+                    .transactionTime(LocalDateTime.now())
+                    .build();
+
+            return new PaymentDTO(paymentRepository.save(payment));
+        } catch (Exception e) {
+            throw new ServiceException("Error creating payment", e);
+        }
     }
 }
