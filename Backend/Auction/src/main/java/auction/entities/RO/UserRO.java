@@ -17,7 +17,10 @@ public class UserRO {
     private String username;
     private String email;
     private String password;
+    private String bio;
     private Role role;
+
+
 
     public User toEntity() {
         return User.builder()
@@ -26,6 +29,7 @@ public class UserRO {
                 .username(this.username)
                 .email(this.email)
                 .password(this.password)
+                .bio(this.bio)
                 .role(this.role)
                 .build();
     }
