@@ -40,6 +40,9 @@ public class User {
     @Column(name = "role", nullable = false)
     private Role role;
 
+    @Column(name = "bio", nullable = true)
+    private String bio;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -50,6 +53,7 @@ public class User {
         this.username = userRO.getUsername();
         this.email = userRO.getEmail();
         this.password = userRO.getPassword();
+        this.bio = userRO.getBio();
         this.role = userRO.getRole();
     }
 }
