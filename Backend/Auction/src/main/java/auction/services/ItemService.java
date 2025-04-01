@@ -13,6 +13,7 @@ import auction.exceptions.ServiceException;
 import auction.repositories.CategoryRepository;
 import auction.repositories.ItemRepository;
 import auction.repositories.UserRepository;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,22 +53,19 @@ public class ItemService {
     }
 
     @Transactional
-    public void save(ItemRO itemRO) {
+    public void save(ItemRO itemRO, HttpSession session) {
         try {
-            User seller = userRepository.findById(itemRO.getSellerId())
-                    .orElseThrow(() -> new ServiceException("Seller not found", new RuntimeException()));
-
-            if (seller.getRole() != Role.SELLER) {
+            User loggedInUser = (User) session.getAttribute("loggedInUser");
+            if (loggedInUser == null || loggedInUser.getRole() != Role.SELLER) {
                 throw new ServiceException("Only sellers can add items", new RuntimeException());
             }
 
             Category category = categoryRepository.findById(itemRO.getCategoryId())
                     .orElseThrow(() -> new ServiceException("Category not found", new RuntimeException()));
 
-            Item item = itemRO.toEntity(seller, category);
+            Item item = itemRO.toEntity(loggedInUser, category);
             item.setImageBase64(itemRO.getImageBase64());
 
-            // Newly saved items should always be pending approval
             item.setStatus(ItemStatus.PENDING);
             item.setAuctionStatus(AuctionStatus.NOT_STARTED);
 
@@ -79,16 +77,24 @@ public class ItemService {
     }
 
     @Transactional
-    public void update(Long id, ItemRO itemRO) {
+    public void update(Long id, ItemRO itemRO, HttpSession session) {
         try {
+            User loggedInUser = (User) session.getAttribute("loggedInUser");
+            if (loggedInUser == null || loggedInUser.getRole() != Role.SELLER) {
+                throw new ServiceException("Only sellers can update items", new RuntimeException());
+            }
+
             Item existingItem = getItemById(id);
+            if (!existingItem.getSeller().getId().equals(loggedInUser.getId())) {
+                throw new ServiceException("You can only update your own items", new RuntimeException());
+            }
+
             existingItem.updateFromRO(itemRO);
 
             // Only update auction status if the item is APPROVED
             if (existingItem.getStartTime() != null
                     && existingItem.getStartTime().isBefore(LocalDateTime.now())
                     && existingItem.getStatus() == ItemStatus.APPROVED) {
-
                 existingItem.setAuctionStatus(AuctionStatus.ACTIVE);
             } else {
                 existingItem.setAuctionStatus(AuctionStatus.NOT_STARTED);
@@ -102,17 +108,18 @@ public class ItemService {
     }
 
     @Transactional
-    public ItemDTO updateItemStatus(Long itemId, Long adminId, ItemStatus status) {
+    public ItemDTO updateItemStatus(Long itemId, Long adminId, ItemStatus status, HttpSession session) {
         try {
+            User loggedInAdmin = (User) session.getAttribute("loggedInUser");
+            if (loggedInAdmin == null || loggedInAdmin.getRole() != Role.ADMIN) {
+                throw new ServiceException("Only admins can change item status", new RuntimeException());
+            }
+
             Item item = itemRepository.findById(itemId)
                     .orElseThrow(() -> new ServiceException("Item not found", new RuntimeException()));
 
             User admin = userRepository.findById(adminId)
                     .orElseThrow(() -> new ServiceException("Admin not found", new RuntimeException()));
-
-            if (admin.getRole() != Role.ADMIN) {
-                throw new ServiceException("Only admins can change item status", new RuntimeException());
-            }
 
             item.setStatus(status);
             item.setApprovedAt(status == ItemStatus.APPROVED ? LocalDateTime.now() : null);
@@ -122,7 +129,6 @@ public class ItemService {
             if (status == ItemStatus.APPROVED
                     && item.getStartTime() != null
                     && item.getStartTime().isBefore(LocalDateTime.now())) {
-
                 item.setAuctionStatus(AuctionStatus.ACTIVE);
             } else {
                 item.setAuctionStatus(AuctionStatus.NOT_STARTED);
@@ -136,19 +142,14 @@ public class ItemService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void updateAuctionStatus(HttpSession session) {
         try {
-            Item item = getItemById(id);
-            itemRepository.delete(item);
-            log.info(MessageUtils.deleteSuccess("Item"));
-        } catch (Exception e) {
-            throw new ServiceException(MessageUtils.deleteError("Item"), e);
-        }
-    }
+            // Ensure that only an admin can update auction status
+            User loggedInUser = (User) session.getAttribute("loggedInUser");
+            if (loggedInUser == null || loggedInUser.getRole() != Role.ADMIN) {
+                throw new ServiceException("Only admins can update auction status", new RuntimeException());
+            }
 
-    @Transactional
-    public void updateAuctionStatus() {
-        try {
             LocalDateTime now = LocalDateTime.now();
             List<Item> items = itemRepository.findAll();
 
@@ -162,8 +163,22 @@ public class ItemService {
                     itemRepository.save(item);
                 }
             }
+            log.info("Auction status updated successfully for eligible items.");
         } catch (Exception e) {
             throw new ServiceException("Error updating auction status", e);
         }
     }
+
+
+    @Transactional
+    public void delete(Long id) {
+        try {
+            Item item = getItemById(id);
+            itemRepository.delete(item);
+            log.info(MessageUtils.deleteSuccess("Item"));
+        } catch (Exception e) {
+            throw new ServiceException(MessageUtils.deleteError("Item"), e);
+        }
+    }
+
 }

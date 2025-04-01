@@ -6,15 +6,18 @@ import auction.entities.User;
 import auction.entities.enums.AuctionStatus;
 import auction.entities.enums.Role;
 import auction.entities.RO.BidRO;
+import auction.exceptions.ServiceException;
 import auction.repositories.BidRepository;
 import auction.repositories.ItemRepository;
 import auction.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +29,28 @@ public class BidService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
 
-    public Bid placeBid(BidRO bidRO) {
+    public List<Bid> getAllBids() {
+        return bidRepository.findAll();
+    }
+
+    public List<Bid> getBidsByItem(Long itemId) {
+        return bidRepository.findByItemId(itemId);
+    }
+
+    public List<Bid> getBidsByUser(Long customerId) {
+        return bidRepository.findByCustomerId(customerId);
+    }
+
+    public List<Bid> getAllByFilter(Long itemId, Long customerId) {
+        return bidRepository.findByFilter(itemId, customerId);
+    }
+
+    public Bid placeBid(BidRO bidRO, HttpSession session) {
+        User loggedInUser = (User) session.getAttribute("loggedInUser");
+        if (loggedInUser == null) {
+            throw new ServiceException("User must be logged in to place a bid.", new RuntimeException());
+        }
+
         Item item = itemRepository.findById(bidRO.getItemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
 
@@ -42,6 +66,10 @@ public class BidService {
             throw new IllegalArgumentException("Item must have a seller before bidding.");
         }
 
+        if (!loggedInUser.getId().equals(customer.getId())) {
+            throw new IllegalArgumentException("You can only place bids on behalf of your own account.");
+        }
+
         if (customer.getRole() == Role.ADMIN) {
             throw new IllegalArgumentException("Admins cannot place bids.");
         }
@@ -55,7 +83,7 @@ public class BidService {
         }
 
         Optional<Bid> lastBidOpt = bidRepository.findByItemId(item.getId()).stream()
-                .max((b1, b2) -> b1.getBidAmount().compareTo(b2.getBidAmount()));
+                .max(Comparator.comparing(Bid::getBidAmount));
 
         BigDecimal lastBidAmount = lastBidOpt.map(Bid::getBidAmount).orElse(item.getStartingPrice());
         BigDecimal bidIncrement = BigDecimal.ONE;
@@ -74,29 +102,10 @@ public class BidService {
     }
 
 
-    public List<Bid> getAllBids() {
-        return bidRepository.findAll();
-    }
-
-    public List<Bid> getBidsByItem(Long itemId) {
-        return bidRepository.findByItemId(itemId);
-    }
-
-    public List<Bid> getBidsByUser(Long customerId) {  
-        return bidRepository.findByCustomerId(customerId);
-    }
-
     public void deleteBid(Long bidId) {
         if (!bidRepository.existsById(bidId)) {
             throw new EntityNotFoundException("Bid not found.");
         }
         bidRepository.deleteById(bidId);
     }
-
-    public List<Bid> getAllByFilter(Long itemId, Long customerId) {
-        return bidRepository.findByFilter(itemId, customerId);
-    }
-
-
-
 }

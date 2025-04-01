@@ -4,6 +4,7 @@ import auction.entities.Bid;
 import auction.entities.DTO.BidDTO;
 import auction.entities.RO.BidRO;
 import auction.services.BidService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,12 +18,6 @@ import java.util.stream.Collectors;
 public class BidController {
 
     private final BidService bidService;
-
-    @PostMapping
-    public ResponseEntity<BidDTO> placeBid(@RequestBody BidRO bidRO) {
-        Bid bid = bidService.placeBid(bidRO);
-        return ResponseEntity.ok(new BidDTO(bid));
-    }
 
     @GetMapping
     public ResponseEntity<List<BidDTO>> getAllBids() {
@@ -51,12 +46,6 @@ public class BidController {
         return ResponseEntity.ok(bids);
     }
 
-    @DeleteMapping("/{bidId}")
-    public ResponseEntity<Void> deleteBid(@PathVariable Long bidId) {
-        bidService.deleteBid(bidId);
-        return ResponseEntity.noContent().build();
-    }
-
     @GetMapping("/filter")
     public ResponseEntity<List<BidDTO>> getAllByFilter(
             @RequestParam(required = false) Long itemId,
@@ -68,5 +57,18 @@ public class BidController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(bids);
+    }
+
+    @PostMapping
+    public ResponseEntity<BidDTO> placeBid(@RequestBody BidRO bidRO, HttpSession session) {
+        Bid bid = bidService.placeBid(bidRO, session);
+        return ResponseEntity.ok(new BidDTO(bid));
+    }
+
+
+    @DeleteMapping("/{bidId}")
+    public ResponseEntity<Void> deleteBid(@PathVariable Long bidId) {
+        bidService.deleteBid(bidId);
+        return ResponseEntity.noContent().build();
     }
 }
